@@ -48,7 +48,7 @@ with st.sidebar:
     st.header("⚙️ Experiment Controls")
     st.session_state.experiment_name = st.text_input("Experiment Name", value=st.session_state.experiment_name)
     st.session_state.num_cells = st.number_input("Number of Cells", min_value=1, max_value=20, value=st.session_state.num_cells)
-    
+
     if st.button("Randomize Current Values"):
         st.session_state.current_experiment = {}
         for i in range(st.session_state.num_cells):
@@ -57,8 +57,11 @@ with st.sidebar:
             st.session_state.current_experiment[f"Cell {i+1}"] = {"Cell Type":ctype, **defaults}
 
     if st.button("💾 Save Experiment"):
-        st.session_state.experiments[st.session_state.experiment_name] = st.session_state.current_experiment.copy()
-        st.success(f"Saved {st.session_state.experiment_name}")
+        if st.session_state.current_experiment:
+            st.session_state.experiments[st.session_state.experiment_name] = st.session_state.current_experiment.copy()
+            st.success(f"Saved {st.session_state.experiment_name}")
+        else:
+            st.warning("No data to save!")
 
     exp_to_load = st.selectbox("📂 Load Experiment", options=["Select"]+list(st.session_state.experiments.keys()))
     if exp_to_load != "Select" and st.button("Load Selected Experiment"):
@@ -81,24 +84,26 @@ with tab1:
     for i in range(st.session_state.num_cells):
         cols = st.columns(5)
         label = f"Cell {i+1}"
-        ctype = cols[0].selectbox(f"Type {i+1}", ["NMC", "LFP"],
+        ctype = cols[0].selectbox(f"Type_{i}", ["NMC", "LFP"],
                                   value=st.session_state.current_experiment.get(label, {}).get("Cell Type", "NMC"),
                                   key=f"type_{i}")
         defaults = get_default_values(ctype)
-        temp = cols[1].number_input(f"T{i+1}", 0.0, 100.0,
+        temp = cols[1].number_input(f"T_{i}", 0.0, 100.0,
                                     value=st.session_state.current_experiment.get(label, {}).get("temp", defaults["temp"]),
                                     step=0.1, key=f"temp_{i}")
-        curr = cols[2].number_input(f"I{i+1}", 0.0, 20.0,
+        curr = cols[2].number_input(f"I_{i}", 0.0, 20.0,
                                     value=st.session_state.current_experiment.get(label, {}).get("current", defaults["current"]),
                                     step=0.01, key=f"curr_{i}")
-        volt = cols[3].number_input(f"V{i+1}", 0.0, 5.0,
+        volt = cols[3].number_input(f"V_{i}", 0.0, 5.0,
                                     value=st.session_state.current_experiment.get(label, {}).get("voltage", defaults["voltage"]),
                                     step=0.01, key=f"volt_{i}")
-        cap = cols[4].number_input(f"C{i+1}", 0.0, 10000.0,
+        cap = cols[4].number_input(f"C_{i}", 0.0, 10000.0,
                                    value=st.session_state.current_experiment.get(label, {}).get("capacitance", defaults["capacitance"]),
                                    step=1.0, key=f"cap_{i}")
-        st.session_state.current_experiment[label] = {"Cell Type":ctype,"temp":temp,"current":curr,"voltage":volt,"capacitance":cap,
-                                                      "max_voltage":defaults["max_voltage"],"min_voltage":defaults["min_voltage"]}
+        st.session_state.current_experiment[label] = {
+            "Cell Type":ctype,"temp":temp,"current":curr,"voltage":volt,"capacitance":cap,
+            "max_voltage":defaults["max_voltage"],"min_voltage":defaults["min_voltage"]
+        }
 
 # ---- Tab 2: Visualizations ----
 with tab2:
@@ -115,10 +120,8 @@ with tab3:
         st.subheader("Summary Table")
         st.dataframe(df)
 
-        # Export
-        if st.button("📤 Export Current Experiment to CSV"):
-            csv = df.to_csv(index=False)
-            st.download_button("Download CSV", csv, file_name=f"{st.session_state.experiment_name}.csv")
+        csv = df.to_csv(index=False)
+        st.download_button("📤 Export Current Experiment to CSV", csv, file_name=f"{st.session_state.experiment_name}.csv")
     else:
         st.info("Enter data to analyze.")
 
@@ -142,8 +145,7 @@ with tab4:
             fig.update_layout(barmode="group", title="Experiment Temperature Comparison")
             st.plotly_chart(fig)
             
-            if st.button("📤 Export All Experiments to CSV"):
-                csv_all = comp_df.to_csv(index=False)
-                st.download_button("Download All Experiments CSV", csv_all, file_name="All_Experiments.csv")
+            csv_all = comp_df.to_csv(index=False)
+            st.download_button("📤 Export All Experiments to CSV", csv_all, file_name="All_Experiments.csv")
     else:
         st.info("Save at least 2 experiments to compare.")
