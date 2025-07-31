@@ -380,7 +380,7 @@ with tab3:
             """, unsafe_allow_html=True)
         
         # Voltage analysis
-        st.subheader("⚡ Voltage Analysis")
+        st.subheader("Voltage Analysis")
         
         # Check for cells outside nominal range
         out_of_range_cells = []
