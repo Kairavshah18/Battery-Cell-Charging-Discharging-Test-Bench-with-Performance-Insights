@@ -9,7 +9,6 @@ import numpy as np
 # Configure page
 st.set_page_config(
     page_title="Battery Cell Testing Dashboard",
-    page_icon="🔋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -185,7 +184,7 @@ def create_individual_cell_chart(cell_data, cell_name):
     return fig
 
 # Main App
-st.title("🔋 Battery Cell Testing Dashboard")
+st.title("Battery Cell Testing Dashboard")
 st.markdown("---")
 
 # Sidebar for main inputs
@@ -196,7 +195,7 @@ with st.sidebar:
     primary_cell_type = st.selectbox("Primary Cell Type", ["NMC", "LFP"])
     
     st.markdown("---")
-    if st.button("🔄 Randomize All Values", type="primary"):
+    if st.button("Randomize All Values", type="primary"):
         for i in range(8):
             cell_type = random.choice(["NMC", "LFP"])
             defaults = get_default_values(cell_type)
@@ -207,7 +206,7 @@ with st.sidebar:
         st.rerun()
 
 # Main content area with tabs
-tab1, tab2, tab3 = st.tabs(["📝 Data Input", "📊 Visualizations", "🔍 Insights"])
+tab1, tab2, tab3 = st.tabs(["Data Input", "Visualizations", "Insights"])
 
 with tab1:
     st.header("Cell Testing Data Input")
@@ -348,7 +347,7 @@ with tab3:
         currents = [data['current'] for data in st.session_state.cells_data.values()]
         
         # Temperature analysis
-        st.subheader("🌡️ Temperature Analysis")
+        st.subheader("🌡Temperature Analysis")
         col1, col2, col3 = st.columns(3)
         
         with col1:
@@ -412,13 +411,13 @@ with tab3:
             else:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h4>✅ Voltage Status</h4>
+                    <h4>Voltage Status</h4>
                     <p>All cells within nominal range</p>
                 </div>
                 """, unsafe_allow_html=True)
         
         # Capacity analysis
-        st.subheader("🔋 Capacity Analysis")
+        st.subheader("Capacity Analysis")
         col1, col2, col3 = st.columns(3)
         
         with col1:
@@ -451,7 +450,7 @@ with tab3:
             """, unsafe_allow_html=True)
         
         # Summary table
-        st.subheader("📋 Summary Table")
+        st.subheader("Summary Table")
         summary_data = []
         for i, (cell_name, data) in enumerate(st.session_state.cells_data.items()):
             summary_data.append({
