@@ -98,12 +98,9 @@ def get_default_values(cell_type):
 
 # Function to generate realistic charging curve
 def generate_charging_curve(voltage_start, voltage_max, capacity, current):
-    # Calculate charge time in hours (capacity in mAh, current in A)
     charge_time_h = capacity / (current * 1000)  # convert mAh to Ah
     time = np.linspace(0, charge_time_h, 100)
-    # Sigmoid curve from voltage_start to voltage_max
     voltage = voltage_start + (voltage_max - voltage_start) / (1 + np.exp(-12 * (time/charge_time_h - 0.5)))
-    # Add slight random noise for realism
     noise = np.random.normal(0, 0.02, size=voltage.shape)
     voltage += noise
     voltage = np.clip(voltage, voltage_start, voltage_max)
@@ -111,10 +108,8 @@ def generate_charging_curve(voltage_start, voltage_max, capacity, current):
 
 # Function to generate realistic discharging curve
 def generate_discharging_curve(voltage_max, voltage_min, capacity, current):
-    # Discharge time in hours
     discharge_time_h = capacity / (current * 1000)
     time = np.linspace(0, discharge_time_h, 100)
-    # Reverse sigmoid curve from voltage_max to voltage_min
     voltage = voltage_min + (voltage_max - voltage_min) / (1 + np.exp(12 * (time/discharge_time_h - 0.5)))
     noise = np.random.normal(0, 0.02, size=voltage.shape)
     voltage += noise
@@ -152,12 +147,22 @@ with st.sidebar:
     st.subheader("Experiments")
     
     exp_names = list(st.session_state.experiments.keys())
-    selected_exp = st.selectbox("Select Experiment", exp_names, index=exp_names.index(st.session_state.current_experiment_name))
+    if not exp_names:
+        st.warning("No experiments found. Create a new experiment.")
+        selected_exp = None
+    else:
+        try:
+            selected_exp = st.selectbox("Select Experiment", exp_names, index=exp_names.index(st.session_state.current_experiment_name))
+        except ValueError:
+            selected_exp = exp_names[0]
     
-    if st.button("Load Experiment"):
-        st.session_state.current_experiment_name = selected_exp
-        load_experiment_data(selected_exp)
-        st.experimental_rerun()
+    if st.button("Load Experiment") and selected_exp:
+        if selected_exp in st.session_state.experiments:
+            st.session_state.current_experiment_name = selected_exp
+            load_experiment_data(selected_exp)
+            st.experimental_rerun()
+        else:
+            st.error("Selected experiment not found.")
     
     new_exp_name = st.text_input("New Experiment Name", value="")
     if st.button("Create New Experiment") and new_exp_name.strip():
@@ -215,7 +220,6 @@ with tab1:
     for i in range(st.session_state.num_cells):
         key = f"cell_{i+1}"
         if key not in st.session_state.cells_data:
-            # initialize default with primary_cell_type if none present
             defaults = get_default_values(primary_cell_type)
             st.session_state.cells_data[key] = {
                 "cell_type": primary_cell_type,
@@ -226,11 +230,9 @@ with tab1:
         cols = st.columns([1,2,2,2,2,2])
         cols[0].markdown(f"**Cell {i+1}**")
         
-        # Cell Type selectbox
         ctype = cols[1].selectbox(f"Type_{key}", ["NMC", "LFP"], index=0 if data.get("cell_type","NMC")=="NMC" else 1, key=f"type_{key}")
         st.session_state.cells_data[key]["cell_type"] = ctype
         
-        # Get updated defaults if changed
         defaults = get_default_values(ctype)
         
         temp = cols[2].number_input(f"Temp_{key}", min_value=0.0, max_value=100.0, value=data.get("temp", defaults["temp"]), step=0.1, key=f"temp_{key}")
@@ -238,7 +240,6 @@ with tab1:
         voltage = cols[4].number_input(f"Voltage_{key}", min_value=0.0, max_value=5.0, value=data.get("voltage", defaults["voltage"]), step=0.01, key=f"voltage_{key}")
         capacitance = cols[5].number_input(f"Capacity_{key}", min_value=0.0, max_value=20000.0, value=data.get("capacitance", defaults["capacitance"]), step=1.0, key=f"capacitance_{key}")
 
-        # Update session state
         st.session_state.cells_data[key].update({
             "temp": temp,
             "current": current,
@@ -265,9 +266,6 @@ with tab2:
             })
         df = pd.DataFrame(chart_data)
         
-        # Overview charts with subplots
-        fig = go.Figure()
-        # temperature
         fig = make_subplots(
             rows=2, cols=2,
             subplot_titles=('Temperature vs Cell Slot', 'Voltage vs Cell Slot', 
@@ -290,7 +288,6 @@ with tab2:
         fig.update_yaxes(gridcolor='#333333')
         st.plotly_chart(fig, use_container_width=True)
         
-        # Individual cell charts grid 2x4 max 8
         st.subheader("Individual Cell Parameters")
         rows = [st.columns(4) for _ in range((st.session_state.num_cells + 3)//4)]
         for i in range(st.session_state.num_cells):
@@ -321,7 +318,7 @@ with tab3:
             key = f"cell_{i+1}"
             d = st.session_state.cells_data[key]
             time, voltage_curve = generate_charging_curve(
-                voltage_start=d["voltage"]*0.9,  # start slightly below voltage
+                voltage_start=d["voltage"]*0.9,
                 voltage_max=d["max_voltage"],
                 capacity=d["capacitance"],
                 current=d["current"]
@@ -382,70 +379,62 @@ with tab5:
     if st.session_state.cells_data:
         temps = [st.session_state.cells_data[f"cell_{i+1}"]['temp'] for i in range(st.session_state.num_cells)]
         voltages = [st.session_state.cells_data[f"cell_{i+1}"]['voltage'] for i in range(st.session_state.num_cells)]
-        capacitances = [st.session_state.cells_data[f"cell_{i+1}"]['capacitance'] for i in range(st.session_state.num_cells)]
         currents = [st.session_state.cells_data[f"cell_{i+1}"]['current'] for i in range(st.session_state.num_cells)]
+        capacities = [st.session_state.cells_data[f"cell_{i+1}"]['capacitance'] for i in range(st.session_state.num_cells)]
         
-        # Temperature Insights
-        col1, col2, col3 = st.columns(3)
-        max_temp_idx = np.argmax(temps)
-        min_temp_idx = np.argmin(temps)
         avg_temp = np.mean(temps)
-        with col1:
-            st.markdown(f'<div class="metric-card"><h4>Highest Temperature</h4><p class="highlight-high">Cell {max_temp_idx+1}: {temps[max_temp_idx]:.1f} °C</p></div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown(f'<div class="metric-card"><h4>Lowest Temperature</h4><p class="highlight-low">Cell {min_temp_idx+1}: {temps[min_temp_idx]:.1f} °C</p></div>', unsafe_allow_html=True)
-        with col3:
-            st.markdown(f'<div class="metric-card"><h4>Average Temperature</h4><p>{avg_temp:.1f} °C</p></div>', unsafe_allow_html=True)
-
-        # Voltage Insights and check nominal range
-        out_of_range_cells = []
-        for i in range(st.session_state.num_cells):
-            d = st.session_state.cells_data[f"cell_{i+1}"]
-            if d["voltage"] < d["min_voltage"] or d["voltage"] > d["max_voltage"]:
-                out_of_range_cells.append(f"Cell {i+1}")
-
-        col1, col2 = st.columns(2)
         avg_voltage = np.mean(voltages)
+        avg_current = np.mean(currents)
+        avg_capacity = np.mean(capacities)
+        
+        # Highlights for high/low
+        max_temp = max(temps)
+        min_temp = min(temps)
+        max_voltage = max(voltages)
+        min_voltage = min(voltages)
+        
+        col1, col2 = st.columns(2)
         with col1:
-            st.markdown(f'<div class="metric-card"><h4>Average Voltage</h4><p>{avg_voltage:.2f} V</p></div>', unsafe_allow_html=True)
+            st.markdown("<div class='metric-card'><h3>Temperature Summary (°C)</h3></div>", unsafe_allow_html=True)
+            for i, temp in enumerate(temps):
+                highlight = ""
+                if temp >= 40:
+                    highlight = "highlight-high"
+                elif temp <= 25:
+                    highlight = "highlight-low"
+                st.markdown(f"Cell {i+1}: <span class='{highlight}'>{temp:.1f}</span>", unsafe_allow_html=True)
+            st.markdown(f"**Average Temperature:** {avg_temp:.1f} °C")
+            
         with col2:
-            if out_of_range_cells:
-                out_cells_str = ", ".join(out_of_range_cells)
-                st.markdown(f'<div class="metric-card"><h4>⚠️ Cells Outside Nominal Voltage Range</h4><p class="highlight-warning">{out_cells_str}</p></div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="metric-card"><h4>Voltage Status</h4><p>All cells within nominal range</p></div>', unsafe_allow_html=True)
-
-        # Capacity insights
-        col1, col2, col3 = st.columns(3)
-        avg_cap = np.mean(capacitances)
-        max_cap_idx = np.argmax(capacitances)
-        min_cap_idx = np.argmin(capacitances)
-        with col1:
-            st.markdown(f'<div class="metric-card"><h4>Average Capacity</h4><p>{avg_cap:.0f} mAh</p></div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown(f'<div class="metric-card"><h4>Highest Capacity</h4><p class="highlight-high">Cell {max_cap_idx+1}: {capacitances[max_cap_idx]:.0f} mAh</p></div>', unsafe_allow_html=True)
-        with col3:
-            st.markdown(f'<div class="metric-card"><h4>Lowest Capacity</h4><p class="highlight-low">Cell {min_cap_idx+1}: {capacitances[min_cap_idx]:.0f} mAh</p></div>', unsafe_allow_html=True)
-
-        # Summary Table
-        summary_rows = []
-        for i in range(st.session_state.num_cells):
-            d = st.session_state.cells_data[f"cell_{i+1}"]
-            status = "⚠️ Out of Range" if f"Cell {i+1}" in out_of_range_cells else "✅ Normal"
-            summary_rows.append({
-                "Cell": f"Cell {i+1}",
-                "Type": d["cell_type"],
-                "Temperature (°C)": d["temp"],
-                "Voltage (V)": d["voltage"],
-                "Current (A)": d["current"],
-                "Capacity (mAh)": d["capacitance"],
-                "Status": status
-            })
-        df_summary = pd.DataFrame(summary_rows)
-        st.dataframe(df_summary, use_container_width=True)
+            st.markdown("<div class='metric-card'><h3>Voltage Summary (V)</h3></div>", unsafe_allow_html=True)
+            for i, volt in enumerate(voltages):
+                highlight = ""
+                if volt >= 4.0:
+                    highlight = "highlight-high"
+                elif volt <= 3.0:
+                    highlight = "highlight-low"
+                st.markdown(f"Cell {i+1}: <span class='{highlight}'>{volt:.2f}</span>", unsafe_allow_html=True)
+            st.markdown(f"**Average Voltage:** {avg_voltage:.2f} V")
+        
+        st.markdown("---")
+        
+        # Additional Insights
+        st.subheader("General Insights")
+        warnings = []
+        for i, temp in enumerate(temps):
+            if temp > 45:
+                warnings.append(f"Cell {i+1}: Temperature exceeds safe limit!")
+        for i, volt in enumerate(voltages):
+            if volt < 2.5:
+                warnings.append(f"Cell {i+1}: Voltage too low, risk of deep discharge!")
+        
+        if warnings:
+            for w in warnings:
+                st.markdown(f"<p class='highlight-warning'>⚠️ {w}</p>", unsafe_allow_html=True)
+        else:
+            st.success("All cells are operating within safe parameters.")
     else:
         st.info("Enter cell data to see insights.")
 
-# Footer
-st.markdown("---")
-st.markdown(f"**Test Configuration:** Bench: {bench_name} | Group: {group_name} | Primary Cell Type: {primary_cell_type}")
+# Save experiment data on exit or when changes happen
+update_experiment_data()
