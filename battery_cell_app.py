@@ -4,52 +4,48 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import random
 import numpy as np
-from io import BytesIO
 
-# ------------------ CONFIGURATION ------------------
+# Configure page
 st.set_page_config(
     page_title="Battery Cell Testing Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ------------------ CUSTOM CSS ------------------
+# Custom CSS for dark professional theme
 st.markdown("""
 <style>
     .stApp {
-        background-color: #1e1e1e;
-        color: #ffffff;
-        font-family: 'Segoe UI', sans-serif;
+        background-color: #121212;
+        color: white;
     }
-    
     .main .block-container {
         padding-top: 1rem;
+        background-color: #121212;
+    }
+    .stSelectbox > div > div, .stTextInput > div > div > input, .stNumberInput > div > div > input {
         background-color: #1e1e1e;
+        color: white;
+        border: 1px solid #333;
     }
-
-    .stSelectbox div div, .stTextInput input, .stNumberInput input {
-        background-color: #2d2d2d;
-        color: #ffffff;
-        border: 1px solid #404040;
-    }
-    
     .metric-card {
-        background-color: #2d2d2d;
+        background-color: #1e1e1e;
         padding: 1rem;
         border-radius: 0.5rem;
-        border: 1px solid #404040;
+        border: 1px solid #333;
         margin-bottom: 1rem;
     }
+    .highlight-high { color: #ff4d4d; font-weight: bold; }
+    .highlight-low { color: #4dd0e1; font-weight: bold; }
+    .highlight-warning { color: #ffa726; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------ SESSION STATE ------------------
-if 'cells_data' not in st.session_state:
-    st.session_state.cells_data = {}
-if 'experiment' not in st.session_state:
-    st.session_state.experiment = "Standard Test"
+# Initialize session state
+if 'experiments' not in st.session_state:
+    st.session_state.experiments = {}
 
-# ------------------ FUNCTIONS ------------------
+# Default values
 def get_default_values(cell_type):
     return {
         "voltage": 3.2 if cell_type == "LFP" else 3.6,
@@ -60,81 +56,87 @@ def get_default_values(cell_type):
         "capacitance": round(random.uniform(2500, 3500) if cell_type == "LFP" else random.uniform(2800, 3800), 0)
     }
 
+# Overview chart
 def create_overview_charts(df):
     fig = make_subplots(
         rows=2, cols=2,
-        subplot_titles=('Temperature', 'Voltage', 'Capacitance', 'Current')
+        subplot_titles=('Temperature vs Cell', 'Voltage vs Cell',
+                       'Capacitance vs Cell', 'Current vs Cell')
     )
-    colors = {'Temperature': '#ff6b6b', 'Voltage': '#4ecdc4', 'Capacitance': '#45b7d1', 'Current': '#ffa726'}
-    
-    for i, col in enumerate(['Temperature', 'Voltage', 'Capacitance', 'Current']):
-        row, c = divmod(i, 2)
-        fig.add_trace(go.Scatter(x=df['Cell'], y=df[col], mode='lines+markers', name=col, line=dict(color=colors[col], width=3)), row=row+1, col=c+1)
-    
-    fig.update_layout(height=600, plot_bgcolor='#1e1e1e', paper_bgcolor='#1e1e1e', font=dict(color='white'))
+    colors = {'Temperature':'#ff4d4d','Voltage':'#4dd0e1','Capacitance':'#2196f3','Current':'#ffa726'}
+    for i,(y,col,title) in enumerate(zip(['Temperature','Voltage','Capacitance','Current'],[1,2,1,2],['Temp','Volt','Cap','Curr'])):
+        fig.add_trace(
+            go.Scatter(x=df['Cell'], y=df[y], mode='lines+markers', name=y,
+                      line=dict(color=colors[y], width=3), marker=dict(size=8)),
+            row=(i//2)+1, col=col
+        )
+    fig.update_layout(height=600, plot_bgcolor='#121212', paper_bgcolor='#121212', font=dict(color='white'))
+    fig.update_xaxes(gridcolor='#333')
+    fig.update_yaxes(gridcolor='#333')
     return fig
 
-def export_csv(df):
-    output = BytesIO()
-    df.to_csv(output, index=False)
-    return output.getvalue()
+# Sidebar
+with st.sidebar:
+    st.header("⚙️ Test Configuration")
+    experiment_name = st.text_input("Experiment Name", value=f"Experiment_{len(st.session_state.experiments)+1}")
+    experiment_type = st.selectbox("Experiment Type", ["Standard", "Overcharge Test", "Thermal Stress"])
+    bench_name = st.text_input("Bench Name", value="Bench_001")
+    group_name = st.text_input("Group Name", value="Group_A")
+    primary_cell_type = st.selectbox("Primary Cell Type", ["NMC", "LFP"])
 
-# ------------------ SIDEBAR ------------------
-st.sidebar.header("⚙ Test Configuration")
-st.session_state.experiment = st.sidebar.selectbox("Experiment Type", ["Standard Test", "Overcharge Test", "Thermal Stress Test"])
-bench_name = st.sidebar.text_input("Bench Name", value="Bench_001")
-group_name = st.sidebar.text_input("Group Name", value="Group_A")
-primary_cell_type = st.sidebar.selectbox("Primary Cell Type", ["NMC", "LFP"])
+    if st.button("Randomize All Values", type="primary"):
+        cells_data = {}
+        for i in range(8):
+            cell_type = random.choice(["NMC", "LFP"])
+            defaults = get_default_values(cell_type)
+            cells_data[f"Cell {i+1}"] = {"Cell Type":cell_type,**defaults}
+        st.session_state.experiments[experiment_name] = cells_data
+        st.success(f"{experiment_name} data randomized and saved!")
 
-if st.sidebar.button("Randomize All Values"):
-    for i in range(8):
-        cell_type = random.choice(["NMC", "LFP"])
-        defaults = get_default_values(cell_type)
-        st.session_state.cells_data[f"Cell {i+1}"] = {"cell_type": cell_type, **defaults}
-    st.experimental_rerun()
+# Tabs
+tab1, tab2, tab3 = st.tabs(["📊 Data Input", "📈 Visualization", "📑 Insights & Export"])
 
-# ------------------ TABS ------------------
-tab1, tab2, tab3 = st.tabs(["📥 Data Input", "📊 Visualizations", "📈 Insights & Export"])
-
-# ------------------ TAB 1: DATA INPUT ------------------
+# Data Input Tab
 with tab1:
-    st.subheader(f"{st.session_state.experiment} - Data Input")
-    cols = st.columns([1, 2, 2, 2, 2, 2])
-    cols[0].markdown("**Slot**")
-    cols[1].markdown("**Type**")
-    cols[2].markdown("**Temp (°C)**")
-    cols[3].markdown("**Current (A)**")
-    cols[4].markdown("**Voltage (V)**")
-    cols[5].markdown("**Capacity (mAh)**")
-
+    st.header("Cell Testing Data Input")
+    if experiment_name not in st.session_state.experiments:
+        st.session_state.experiments[experiment_name] = {}
     for i in range(8):
-        row = st.columns([1, 2, 2, 2, 2, 2])
-        row[0].markdown(f"**{i+1}**")
-        cell_type = row[1].selectbox("", ["NMC", "LFP"], key=f"type_{i}")
+        cols = st.columns(5)
+        cell_label = f"Cell {i+1}"
+        cell_type = cols[0].selectbox(f"Type {i+1}",["NMC","LFP"],key=f"type_{i}")
         defaults = get_default_values(cell_type)
-        temp = row[2].number_input("", 0.0, 100.0, defaults['temp'], 0.1, key=f"temp_{i}")
-        current = row[3].number_input("", 0.0, 20.0, defaults['current'], 0.01, key=f"current_{i}")
-        voltage = row[4].number_input("", 0.0, 5.0, defaults['voltage'], 0.01, key=f"voltage_{i}")
-        cap = row[5].number_input("", 0.0, 10000.0, defaults['capacitance'], 1.0, key=f"cap_{i}")
-        st.session_state.cells_data[f"Cell {i+1}"] = {"cell_type": cell_type, "temp": temp, "current": current, "voltage": voltage, "capacitance": cap, "max_voltage": defaults['max_voltage'], "min_voltage": defaults['min_voltage']}
+        temp = cols[1].number_input(f"T {i+1}",0.0,100.0,value=defaults["temp"],step=0.1,key=f"temp_{i}")
+        current = cols[2].number_input(f"I {i+1}",0.0,20.0,value=defaults["current"],step=0.01,key=f"curr_{i}")
+        voltage = cols[3].number_input(f"V {i+1}",0.0,5.0,value=defaults["voltage"],step=0.01,key=f"volt_{i}")
+        cap = cols[4].number_input(f"C {i+1}",0.0,10000.0,value=defaults["capacitance"],step=1.0,key=f"cap_{i}")
+        st.session_state.experiments[experiment_name][cell_label] = {"Cell Type":cell_type,"temp":temp,"current":current,"voltage":voltage,"capacitance":cap,
+                                                                     "max_voltage":defaults["max_voltage"],"min_voltage":defaults["min_voltage"]}
 
-# ------------------ TAB 2: VISUALIZATION ------------------
+# Visualization Tab
 with tab2:
-    if st.session_state.cells_data:
-        df = pd.DataFrame([{**{"Cell": k}, **v} for k, v in st.session_state.cells_data.items()])
+    st.header(f"Visualization for {experiment_name}")
+    if experiment_name in st.session_state.experiments:
+        df = pd.DataFrame([
+            {"Cell":c,"Cell Type":d["Cell Type"],"Temperature":d["temp"],"Voltage":d["voltage"],
+             "Current":d["current"],"Capacitance":d["capacitance"]}
+            for c,d in st.session_state.experiments[experiment_name].items()
+        ])
         st.plotly_chart(create_overview_charts(df), use_container_width=True)
     else:
-        st.info("Enter data in Tab 1 to visualize.")
+        st.warning("Please enter data in Data Input tab.")
 
-# ------------------ TAB 3: INSIGHTS & EXPORT ------------------
+# Insights & Export Tab
 with tab3:
-    if st.session_state.cells_data:
-        df = pd.DataFrame([{**{"Cell": k}, **v} for k, v in st.session_state.cells_data.items()])
-        avg_temp, avg_voltage, avg_cap = np.mean(df['temp']), np.mean(df['voltage']), np.mean(df['capacitance'])
-        st.markdown(f"**Average Temp:** {avg_temp:.2f} °C | **Average Voltage:** {avg_voltage:.2f} V | **Average Capacity:** {avg_cap:.0f} mAh")
-
-        csv_data = export_csv(df)
-        st.download_button("📥 Export CSV", data=csv_data, file_name=f"{bench_name}_{st.session_state.experiment}.csv", mime="text/csv")
+    st.header("Insights & CSV Export")
+    if experiment_name in st.session_state.experiments:
+        df = pd.DataFrame([
+            {"Cell":c,"Type":d["Cell Type"],"Temperature":d["temp"],"Voltage":d["voltage"],
+             "Current":d["current"],"Capacitance":d["capacitance"]}
+            for c,d in st.session_state.experiments[experiment_name].items()
+        ])
         st.dataframe(df, use_container_width=True)
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 Download Data as CSV",data=csv,file_name=f"{experiment_name}.csv",mime="text/csv")
     else:
-        st.info("Enter data in Tab 1 to see insights and export.")
+        st.info("No experiment data to export.")
