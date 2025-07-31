@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import random
 import numpy as np
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
 
 # Configure page
 st.set_page_config(
