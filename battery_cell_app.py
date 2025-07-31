@@ -1,82 +1,83 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import random
+import numpy as np
 
 # Configure page
-st.set_page_config(page_title="Battery Cell Testing Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Battery Cell Testing Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Custom CSS for dark theme and styling
+# Custom CSS for dark theme
 st.markdown("""
 <style>
     .stApp {
-        background-color: #121212;
-        color: #E0E0E0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1e1e1e;
+        color: #ffffff;
     }
+    
     .main .block-container {
         padding-top: 2rem;
-        background-color: #121212;
+        background-color: #1e1e1e;
     }
-    .stSelectbox > div > div,
-    .stTextInput > div > div > input,
+    
+    .stSelectbox > div > div {
+        background-color: #2d2d2d;
+        color: #ffffff;
+    }
+    
+    .stTextInput > div > div > input {
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #404040;
+    }
+    
     .stNumberInput > div > div > input {
-        background-color: #1E1E1E;
-        color: #E0E0E0;
-        border: 1px solid #333333;
-        border-radius: 5px;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #404040;
     }
+    
     .stDataFrame {
-        background-color: #1E1E1E;
+        background-color: #2d2d2d;
     }
+    
     .metric-card {
-        background-color: #1E1E1E;
+        background-color: #2d2d2d;
         padding: 1rem;
-        border-radius: 10px;
-        border: 1px solid #333333;
+        border-radius: 0.5rem;
+        border: 1px solid #404040;
         margin-bottom: 1rem;
-        box-shadow: 0 0 10px #222;
     }
+    
     .highlight-high {
-        color: #FF6B6B;
-        font-weight: 600;
+        color: #ff6b6b;
+        font-weight: bold;
     }
+    
     .highlight-low {
-        color: #4ECDC4;
-        font-weight: 600;
+        color: #4ecdc4;
+        font-weight: bold;
     }
+    
     .highlight-warning {
-        color: #FFA726;
-        font-weight: 600;
-    }
-    .btn-randomize {
-        background-color: #4ECDC4;
-        color: #121212;
-        font-weight: 700;
-        border-radius: 5px;
-        padding: 8px 16px;
-        margin-bottom: 20px;
+        color: #ffa726;
+        font-weight: bold;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state containers
+# Initialize session state
 if 'cells_data' not in st.session_state:
     st.session_state.cells_data = {}
 
-if 'experiments' not in st.session_state:
-    st.session_state.experiments = {}
-
-if 'current_experiment_name' not in st.session_state:
-    st.session_state.current_experiment_name = "Default Experiment"
-
-if st.session_state.current_experiment_name not in st.session_state.experiments:
-    st.session_state.experiments[st.session_state.current_experiment_name] = {}
-
-# Function to get default values by cell type
 def get_default_values(cell_type):
+    """Get default values based on cell type"""
     if cell_type == "LFP":
         return {
             "voltage": 3.2,
@@ -96,44 +97,97 @@ def get_default_values(cell_type):
             "capacitance": round(random.uniform(2800, 3800), 0)
         }
 
-# Function to generate realistic charging curve
-def generate_charging_curve(voltage_start, voltage_max, capacity, current):
-    charge_time_h = capacity / (current * 1000)  # convert mAh to Ah
-    time = np.linspace(0, charge_time_h, 100)
-    voltage = voltage_start + (voltage_max - voltage_start) / (1 + np.exp(-12 * (time/charge_time_h - 0.5)))
-    noise = np.random.normal(0, 0.02, size=voltage.shape)
-    voltage += noise
-    voltage = np.clip(voltage, voltage_start, voltage_max)
-    return time, voltage
+def create_overview_charts(df):
+    """Create overview charts for all parameters"""
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('Temperature vs Cell Slot', 'Voltage vs Cell Slot', 
+                       'Capacitance vs Cell Slot', 'Current vs Cell Slot'),
+        specs=[[{"secondary_y": False}, {"secondary_y": False}],
+               [{"secondary_y": False}, {"secondary_y": False}]]
+    )
+    
+    # Temperature chart
+    fig.add_trace(
+        go.Scatter(x=df['Cell_Slot'], y=df['Temperature'], 
+                  mode='lines+markers', name='Temperature',
+                  line=dict(color='#ff6b6b', width=3),
+                  marker=dict(size=8)),
+        row=1, col=1
+    )
+    
+    # Voltage chart
+    fig.add_trace(
+        go.Scatter(x=df['Cell_Slot'], y=df['Voltage'], 
+                  mode='lines+markers', name='Voltage',
+                  line=dict(color='#4ecdc4', width=3),
+                  marker=dict(size=8)),
+        row=1, col=2
+    )
+    
+    # Capacitance chart
+    fig.add_trace(
+        go.Scatter(x=df['Cell_Slot'], y=df['Capacitance'], 
+                  mode='lines+markers', name='Capacitance',
+                  line=dict(color='#45b7d1', width=3),
+                  marker=dict(size=8)),
+        row=2, col=1
+    )
+    
+    # Current chart
+    fig.add_trace(
+        go.Scatter(x=df['Cell_Slot'], y=df['Current'], 
+                  mode='lines+markers', name='Current',
+                  line=dict(color='#ffa726', width=3),
+                  marker=dict(size=8)),
+        row=2, col=2
+    )
+    
+    fig.update_layout(
+        height=600,
+        showlegend=False,
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(color='white'),
+        title_font=dict(color='white')
+    )
+    
+    fig.update_xaxes(gridcolor='#404040', title_font=dict(color='white'))
+    fig.update_yaxes(gridcolor='#404040', title_font=dict(color='white'))
+    
+    return fig
 
-# Function to generate realistic discharging curve
-def generate_discharging_curve(voltage_max, voltage_min, capacity, current):
-    discharge_time_h = capacity / (current * 1000)
-    time = np.linspace(0, discharge_time_h, 100)
-    voltage = voltage_min + (voltage_max - voltage_min) / (1 + np.exp(12 * (time/discharge_time_h - 0.5)))
-    noise = np.random.normal(0, 0.02, size=voltage.shape)
-    voltage += noise
-    voltage = np.clip(voltage, voltage_min, voltage_max)
-    return time, voltage
+def create_individual_cell_chart(cell_data, cell_name):
+    """Create individual cell parameter chart"""
+    parameters = ['Temperature', 'Voltage', 'Current', 'Capacitance']
+    values = [cell_data['temp'], cell_data['voltage'], 
+             cell_data['current'], cell_data['capacitance']]
+    colors = ['#ff6b6b', '#4ecdc4', '#ffa726', '#45b7d1']
+    
+    fig = go.Figure(data=[
+        go.Bar(x=parameters, y=values, marker_color=colors,
+               text=values, textposition='auto')
+    ])
+    
+    fig.update_layout(
+        title=f"Parameters for {cell_name}",
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(color='white'),
+        title_font=dict(color='white'),
+        height=400
+    )
+    
+    fig.update_xaxes(gridcolor='#404040', title_font=dict(color='white'))
+    fig.update_yaxes(gridcolor='#404040', title_font=dict(color='white'))
+    
+    return fig
 
-# Store data to current experiment
-def update_experiment_data():
-    data = {}
-    for i in range(st.session_state.num_cells):
-        key = f"cell_{i+1}"
-        data[key] = st.session_state.cells_data.get(key, {})
-    st.session_state.experiments[st.session_state.current_experiment_name] = data
+# Main App
+st.title("Battery Cell Testing Dashboard")
+st.markdown("---")
 
-# Load experiment data into cells_data session
-def load_experiment_data(name):
-    exp_data = st.session_state.experiments.get(name, {})
-    st.session_state.cells_data = {k: v.copy() for k, v in exp_data.items()}
-
-# Initialize number of cells, min 4 max 12
-if 'num_cells' not in st.session_state:
-    st.session_state.num_cells = 8
-
-# Sidebar controls
+# Sidebar for main inputs
 with st.sidebar:
     st.header("Test Configuration")
     bench_name = st.text_input("Bench Name", value="Bench_001")
@@ -141,300 +195,280 @@ with st.sidebar:
     primary_cell_type = st.selectbox("Primary Cell Type", ["NMC", "LFP"])
     
     st.markdown("---")
-    st.number_input("Number of Cells", min_value=4, max_value=12, value=st.session_state.num_cells, step=1, key="num_cells")
-    
-    st.markdown("---")
-    st.subheader("Experiments")
-    
-    exp_names = list(st.session_state.experiments.keys())
-    if not exp_names:
-        st.warning("No experiments found. Create a new experiment.")
-        selected_exp = None
-    else:
-        try:
-            selected_exp = st.selectbox("Select Experiment", exp_names, index=exp_names.index(st.session_state.current_experiment_name))
-        except ValueError:
-            selected_exp = exp_names[0]
-    
-    if st.button("Load Experiment") and selected_exp:
-        if selected_exp in st.session_state.experiments:
-            st.session_state.current_experiment_name = selected_exp
-            load_experiment_data(selected_exp)
-            st.experimental_rerun()
-        else:
-            st.error("Selected experiment not found.")
-    
-    new_exp_name = st.text_input("New Experiment Name", value="")
-    if st.button("Create New Experiment") and new_exp_name.strip():
-        if new_exp_name in st.session_state.experiments:
-            st.warning("Experiment name already exists.")
-        else:
-            st.session_state.current_experiment_name = new_exp_name.strip()
-            st.session_state.experiments[new_exp_name.strip()] = {}
-            st.session_state.cells_data = {}
-            st.experimental_rerun()
-    
-    if st.button("Save Current Experiment"):
-        update_experiment_data()
-        st.success(f"Experiment '{st.session_state.current_experiment_name}' saved.")
-
-    st.markdown("---")
-    if st.button("Randomize All Cell Values"):
-        for i in range(st.session_state.num_cells):
+    if st.button("Randomize All Values", type="primary"):
+        for i in range(8):
             cell_type = random.choice(["NMC", "LFP"])
             defaults = get_default_values(cell_type)
             st.session_state.cells_data[f"cell_{i+1}"] = {
                 "cell_type": cell_type,
                 **defaults
             }
-        update_experiment_data()
-        st.experimental_rerun()
+        st.rerun()
 
-    st.markdown("---")
-    if st.button("Export Current Experiment Data as CSV"):
-        update_experiment_data()
-        exp_data = st.session_state.experiments.get(st.session_state.current_experiment_name, {})
-        rows = []
-        for key, d in exp_data.items():
-            rows.append({
-                "Cell": key,
-                "Type": d.get("cell_type", ""),
-                "Temperature (°C)": d.get("temp", ""),
-                "Voltage (V)": d.get("voltage", ""),
-                "Max Voltage (V)": d.get("max_voltage", ""),
-                "Min Voltage (V)": d.get("min_voltage", ""),
-                "Current (A)": d.get("current", ""),
-                "Capacity (mAh)": d.get("capacitance", "")
-            })
-        df_export = pd.DataFrame(rows)
-        csv_data = df_export.to_csv(index=False).encode('utf-8')
-        st.download_button(label="Download CSV", data=csv_data, file_name=f"{st.session_state.current_experiment_name}.csv", mime='text/csv')
-
-# Tabs: Data Input, Visualizations, Charging Profiles, Discharging Profiles, Insights
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Data Input", "Visualizations", "Charging Profiles", "Discharging Profiles", "Insights"])
+# Main content area with tabs
+tab1, tab2, tab3 = st.tabs(["Data Input", "Visualizations", "Insights"])
 
 with tab1:
     st.header("Cell Testing Data Input")
-    st.markdown(f"Enter data for {st.session_state.num_cells} cell slots:")
+    st.markdown("Enter data for 8 cell slots:")
     
-    for i in range(st.session_state.num_cells):
-        key = f"cell_{i+1}"
-        if key not in st.session_state.cells_data:
-            defaults = get_default_values(primary_cell_type)
-            st.session_state.cells_data[key] = {
-                "cell_type": primary_cell_type,
-                **defaults
-            }
-        data = st.session_state.cells_data[key]
+    # Create columns for input table
+    cols = st.columns([1, 2, 2, 2, 2, 2])
+    
+    # Headers
+    cols[0].markdown("**Slot**")
+    cols[1].markdown("**Cell Type**")
+    cols[2].markdown("**Temperature (°C)**")
+    cols[3].markdown("**Current (A)**")
+    cols[4].markdown("**Voltage (V)**")
+    cols[5].markdown("**Capacitance (mAh)**")
+    
+    # Input rows
+    for i in range(8):
+        cols = st.columns([1, 2, 2, 2, 2, 2])
         
-        cols = st.columns([1,2,2,2,2,2])
-        cols[0].markdown(f"**Cell {i+1}**")
+        with cols[0]:
+            st.markdown(f"**{i+1}**")
         
-        ctype = cols[1].selectbox(f"Type_{key}", ["NMC", "LFP"], index=0 if data.get("cell_type","NMC")=="NMC" else 1, key=f"type_{key}")
-        st.session_state.cells_data[key]["cell_type"] = ctype
+        with cols[1]:
+            cell_type = st.selectbox(
+                f"Type {i+1}",
+                ["NMC", "LFP"],
+                key=f"type_{i}",
+                label_visibility="collapsed"
+            )
         
-        defaults = get_default_values(ctype)
+        # Get defaults for current cell type
+        defaults = get_default_values(cell_type)
         
-        temp = cols[2].number_input(f"Temp_{key}", min_value=0.0, max_value=100.0, value=data.get("temp", defaults["temp"]), step=0.1, key=f"temp_{key}")
-        current = cols[3].number_input(f"Current_{key}", min_value=0.0, max_value=20.0, value=data.get("current", defaults["current"]), step=0.01, key=f"current_{key}")
-        voltage = cols[4].number_input(f"Voltage_{key}", min_value=0.0, max_value=5.0, value=data.get("voltage", defaults["voltage"]), step=0.01, key=f"voltage_{key}")
-        capacitance = cols[5].number_input(f"Capacity_{key}", min_value=0.0, max_value=20000.0, value=data.get("capacitance", defaults["capacitance"]), step=1.0, key=f"capacitance_{key}")
-
-        st.session_state.cells_data[key].update({
+        with cols[2]:
+            temp = st.number_input(
+                f"Temp {i+1}",
+                min_value=0.0,
+                max_value=100.0,
+                value=defaults["temp"],
+                step=0.1,
+                key=f"temp_{i}",
+                label_visibility="collapsed"
+            )
+        
+        with cols[3]:
+            current = st.number_input(
+                f"Current {i+1}",
+                min_value=0.0,
+                max_value=20.0,
+                value=defaults["current"],
+                step=0.01,
+                key=f"current_{i}",
+                label_visibility="collapsed"
+            )
+        
+        with cols[4]:
+            voltage = st.number_input(
+                f"Voltage {i+1}",
+                min_value=0.0,
+                max_value=5.0,
+                value=defaults["voltage"],
+                step=0.01,
+                key=f"voltage_{i}",
+                label_visibility="collapsed"
+            )
+        
+        with cols[5]:
+            capacitance = st.number_input(
+                f"Capacitance {i+1}",
+                min_value=0.0,
+                max_value=10000.0,
+                value=defaults["capacitance"],
+                step=1.0,
+                key=f"capacitance_{i}",
+                label_visibility="collapsed"
+            )
+        
+        # Store data in session state
+        st.session_state.cells_data[f"cell_{i+1}"] = {
+            "cell_type": cell_type,
             "temp": temp,
             "current": current,
             "voltage": voltage,
             "capacitance": capacitance,
             "max_voltage": defaults["max_voltage"],
             "min_voltage": defaults["min_voltage"]
-        })
+        }
 
 with tab2:
     st.header("Data Visualizations")
+    
     if st.session_state.cells_data:
+        # Prepare data for charts
         chart_data = []
-        for i in range(st.session_state.num_cells):
-            key = f"cell_{i+1}"
-            d = st.session_state.cells_data.get(key, {})
+        for slot, data in st.session_state.cells_data.items():
             chart_data.append({
-                "Cell_Slot": f"Cell {i+1}",
-                "Cell_Type": d.get("cell_type",""),
-                "Temperature": d.get("temp", 0),
-                "Voltage": d.get("voltage", 0),
-                "Current": d.get("current", 0),
-                "Capacitance": d.get("capacitance", 0)
+                'Cell_Slot': slot.replace('cell_', 'Cell '),
+                'Cell_Type': data['cell_type'],
+                'Temperature': data['temp'],
+                'Voltage': data['voltage'],
+                'Current': data['current'],
+                'Capacitance': data['capacitance']
             })
+        
         df = pd.DataFrame(chart_data)
         
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Temperature vs Cell Slot', 'Voltage vs Cell Slot', 
-                           'Capacitance vs Cell Slot', 'Current vs Cell Slot'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
-        fig.add_trace(go.Scatter(x=df["Cell_Slot"], y=df["Temperature"], mode='lines+markers', 
-                                 name="Temperature", line=dict(color="#FF6B6B", width=3)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=df["Cell_Slot"], y=df["Voltage"], mode='lines+markers', 
-                                 name="Voltage", line=dict(color="#4ECDC4", width=3)), row=1, col=2)
-        fig.add_trace(go.Scatter(x=df["Cell_Slot"], y=df["Capacitance"], mode='lines+markers', 
-                                 name="Capacitance", line=dict(color="#45B7D1", width=3)), row=2, col=1)
-        fig.add_trace(go.Scatter(x=df["Cell_Slot"], y=df["Current"], mode='lines+markers', 
-                                 name="Current", line=dict(color="#FFA726", width=3)), row=2, col=2)
+        # Overview charts
+        st.subheader("Overview Charts")
+        overview_fig = create_overview_charts(df)
+        st.plotly_chart(overview_fig, use_container_width=True)
         
-        fig.update_layout(height=600, plot_bgcolor='#121212', paper_bgcolor='#121212',
-                          font=dict(color='white'), showlegend=False)
-        fig.update_xaxes(gridcolor='#333333')
-        fig.update_yaxes(gridcolor='#333333')
-        st.plotly_chart(fig, use_container_width=True)
+        # Individual cell charts
+        st.subheader("Individual Cell Analysis")
         
-        st.subheader("Individual Cell Parameters")
-        rows = [st.columns(4) for _ in range((st.session_state.num_cells + 3)//4)]
-        for i in range(st.session_state.num_cells):
+        # Create 2x4 grid for individual charts
+        rows = [st.columns(4) for _ in range(2)]
+        
+        for i, (cell_name, cell_data) in enumerate(st.session_state.cells_data.items()):
             row = i // 4
             col = i % 4
-            key = f"cell_{i+1}"
-            d = st.session_state.cells_data[key]
-            parameters = ['Temperature', 'Voltage', 'Current', 'Capacitance']
-            values = [d['temp'], d['voltage'], d['current'], d['capacitance']]
-            colors = ['#FF6B6B', '#4ECDC4', '#FFA726', '#45B7D1']
-            fig_ind = go.Figure(go.Bar(x=parameters, y=values, marker_color=colors, text=values, textposition='auto'))
-            fig_ind.update_layout(height=350, plot_bgcolor='#121212', paper_bgcolor='#121212',
-                                  font=dict(color='white'), title=f"Cell {i+1} Parameters")
-            fig_ind.update_xaxes(gridcolor='#333333')
-            fig_ind.update_yaxes(gridcolor='#333333')
+            
             with rows[row][col]:
-                st.plotly_chart(fig_ind, use_container_width=True)
+                individual_fig = create_individual_cell_chart(cell_data, cell_name.replace('_', ' ').title())
+                st.plotly_chart(individual_fig, use_container_width=True)
+    
     else:
-        st.info("Enter cell data to see visualizations.")
+        st.info("Please enter cell data in the Data Input tab to see visualizations.")
 
 with tab3:
-    st.header("Charging Profiles")
+    st.header("Test Insights & Analysis")
+    
     if st.session_state.cells_data:
-        rows = [st.columns(2) for _ in range((st.session_state.num_cells + 1)//2)]
-        for i in range(st.session_state.num_cells):
-            row = i // 2
-            col = i % 2
-            key = f"cell_{i+1}"
-            d = st.session_state.cells_data[key]
-            time, voltage_curve = generate_charging_curve(
-                voltage_start=d["voltage"]*0.9,
-                voltage_max=d["max_voltage"],
-                capacity=d["capacitance"],
-                current=d["current"]
-            )
-            fig_chg = go.Figure(go.Scatter(x=time*60, y=voltage_curve, mode='lines+markers', line=dict(color="#4ECDC4", width=3)))
-            fig_chg.update_layout(
-                title=f"Charging Profile - Cell {i+1}",
-                xaxis_title="Time (minutes)",
-                yaxis_title="Voltage (V)",
-                plot_bgcolor='#121212',
-                paper_bgcolor='#121212',
-                font=dict(color='white'),
-                height=350,
-                margin=dict(t=40, b=40)
-            )
-            fig_chg.update_xaxes(gridcolor='#333333')
-            fig_chg.update_yaxes(gridcolor='#333333', range=[d["voltage"]*0.85, d["max_voltage"]+0.1])
-            with rows[row][col]:
-                st.plotly_chart(fig_chg, use_container_width=True)
-    else:
-        st.info("Enter cell data to generate charging profiles.")
-
-with tab4:
-    st.header("Discharging Profiles")
-    if st.session_state.cells_data:
-        rows = [st.columns(2) for _ in range((st.session_state.num_cells + 1)//2)]
-        for i in range(st.session_state.num_cells):
-            row = i // 2
-            col = i % 2
-            key = f"cell_{i+1}"
-            d = st.session_state.cells_data[key]
-            time, voltage_curve = generate_discharging_curve(
-                voltage_max=d["voltage"],
-                voltage_min=d["min_voltage"],
-                capacity=d["capacitance"],
-                current=d["current"]
-            )
-            fig_dis = go.Figure(go.Scatter(x=time*60, y=voltage_curve, mode='lines+markers', line=dict(color="#FF6B6B", width=3)))
-            fig_dis.update_layout(
-                title=f"Discharging Profile - Cell {i+1}",
-                xaxis_title="Time (minutes)",
-                yaxis_title="Voltage (V)",
-                plot_bgcolor='#121212',
-                paper_bgcolor='#121212',
-                font=dict(color='white'),
-                height=350,
-                margin=dict(t=40, b=40)
-            )
-            fig_dis.update_xaxes(gridcolor='#333333')
-            fig_dis.update_yaxes(gridcolor='#333333', range=[d["min_voltage"]-0.1, d["voltage"]*1.05])
-            with rows[row][col]:
-                st.plotly_chart(fig_dis, use_container_width=True)
-    else:
-        st.info("Enter cell data to generate discharging profiles.")
-
-with tab5:
-    st.header("Test Insights & Summary")
-    if st.session_state.cells_data:
-        temps = [st.session_state.cells_data[f"cell_{i+1}"]['temp'] for i in range(st.session_state.num_cells)]
-        voltages = [st.session_state.cells_data[f"cell_{i+1}"]['voltage'] for i in range(st.session_state.num_cells)]
-        currents = [st.session_state.cells_data[f"cell_{i+1}"]['current'] for i in range(st.session_state.num_cells)]
-        capacities = [st.session_state.cells_data[f"cell_{i+1}"]['capacitance'] for i in range(st.session_state.num_cells)]
+        # Calculate insights
+        temps = [data['temp'] for data in st.session_state.cells_data.values()]
+        voltages = [data['voltage'] for data in st.session_state.cells_data.values()]
+        capacitances = [data['capacitance'] for data in st.session_state.cells_data.values()]
+        currents = [data['current'] for data in st.session_state.cells_data.values()]
         
-        avg_temp = np.mean(temps)
-        avg_voltage = np.mean(voltages)
-        avg_current = np.mean(currents)
-        avg_capacity = np.mean(capacities)
+        # Temperature analysis
+        st.subheader("🌡Temperature Analysis")
+        col1, col2, col3 = st.columns(3)
         
-        # Highlights for high/low
-        max_temp = max(temps)
-        min_temp = min(temps)
-        max_voltage = max(voltages)
-        min_voltage = min(voltages)
+        with col1:
+            max_temp_idx = temps.index(max(temps))
+            max_temp_cell = f"Cell {max_temp_idx + 1}"
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Highest Temperature</h4>
+                <p class="highlight-high">{max_temp_cell}: {max(temps):.1f}°C</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            min_temp_idx = temps.index(min(temps))
+            min_temp_cell = f"Cell {min_temp_idx + 1}"
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Lowest Temperature</h4>
+                <p class="highlight-low">{min_temp_cell}: {min(temps):.1f}°C</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            avg_temp = np.mean(temps)
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Average Temperature</h4>
+                <p>{avg_temp:.1f}°C</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Voltage analysis
+        st.subheader("Voltage Analysis")
+        
+        # Check for cells outside nominal range
+        out_of_range_cells = []
+        for i, (cell_name, data) in enumerate(st.session_state.cells_data.items()):
+            if data['voltage'] < data['min_voltage'] or data['voltage'] > data['max_voltage']:
+                out_of_range_cells.append(f"Cell {i+1}")
         
         col1, col2 = st.columns(2)
+        
         with col1:
-            st.markdown("<div class='metric-card'><h3>Temperature Summary (°C)</h3></div>", unsafe_allow_html=True)
-            for i, temp in enumerate(temps):
-                highlight = ""
-                if temp >= 40:
-                    highlight = "highlight-high"
-                elif temp <= 25:
-                    highlight = "highlight-low"
-                st.markdown(f"Cell {i+1}: <span class='{highlight}'>{temp:.1f}</span>", unsafe_allow_html=True)
-            st.markdown(f"**Average Temperature:** {avg_temp:.1f} °C")
-            
+            avg_voltage = np.mean(voltages)
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Average Voltage</h4>
+                <p>{avg_voltage:.2f}V</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         with col2:
-            st.markdown("<div class='metric-card'><h3>Voltage Summary (V)</h3></div>", unsafe_allow_html=True)
-            for i, volt in enumerate(voltages):
-                highlight = ""
-                if volt >= 4.0:
-                    highlight = "highlight-high"
-                elif volt <= 3.0:
-                    highlight = "highlight-low"
-                st.markdown(f"Cell {i+1}: <span class='{highlight}'>{volt:.2f}</span>", unsafe_allow_html=True)
-            st.markdown(f"**Average Voltage:** {avg_voltage:.2f} V")
+            if out_of_range_cells:
+                cells_str = ", ".join(out_of_range_cells)
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h4>⚠️ Cells Outside Nominal Range</h4>
+                    <p class="highlight-warning">{cells_str}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h4>Voltage Status</h4>
+                    <p>All cells within nominal range</p>
+                </div>
+                """, unsafe_allow_html=True)
         
-        st.markdown("---")
+        # Capacity analysis
+        st.subheader("Capacity Analysis")
+        col1, col2, col3 = st.columns(3)
         
-        # Additional Insights
-        st.subheader("General Insights")
-        warnings = []
-        for i, temp in enumerate(temps):
-            if temp > 45:
-                warnings.append(f"Cell {i+1}: Temperature exceeds safe limit!")
-        for i, volt in enumerate(voltages):
-            if volt < 2.5:
-                warnings.append(f"Cell {i+1}: Voltage too low, risk of deep discharge!")
+        with col1:
+            avg_capacity = np.mean(capacitances)
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Average Capacity</h4>
+                <p>{avg_capacity:.0f} mAh</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if warnings:
-            for w in warnings:
-                st.markdown(f"<p class='highlight-warning'>⚠️ {w}</p>", unsafe_allow_html=True)
-        else:
-            st.success("All cells are operating within safe parameters.")
+        with col2:
+            max_capacity_idx = capacitances.index(max(capacitances))
+            max_capacity_cell = f"Cell {max_capacity_idx + 1}"
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Highest Capacity</h4>
+                <p class="highlight-high">{max_capacity_cell}: {max(capacitances):.0f} mAh</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            min_capacity_idx = capacitances.index(min(capacitances))
+            min_capacity_cell = f"Cell {min_capacity_idx + 1}"
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>Lowest Capacity</h4>
+                <p class="highlight-low">{min_capacity_cell}: {min(capacitances):.0f} mAh</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Summary table
+        st.subheader("Summary Table")
+        summary_data = []
+        for i, (cell_name, data) in enumerate(st.session_state.cells_data.items()):
+            summary_data.append({
+                'Cell': f"Cell {i+1}",
+                'Type': data['cell_type'],
+                'Temperature (°C)': data['temp'],
+                'Voltage (V)': data['voltage'],
+                'Current (A)': data['current'],
+                'Capacitance (mAh)': data['capacitance'],
+                'Status': '⚠️ Out of Range' if f"Cell {i+1}" in out_of_range_cells else '✅ Normal'
+            })
+        
+        summary_df = pd.DataFrame(summary_data)
+        st.dataframe(summary_df, use_container_width=True)
+        
     else:
-        st.info("Enter cell data to see insights.")
+        st.info("Please enter cell data in the Data Input tab to see insights.")
 
-# Save experiment data on exit or when changes happen
-update_experiment_data()
+# Footer
+st.markdown("---")
+st.markdown(f"**Test Configuration:** {bench_name} | {group_name} | Primary Type: {primary_cell_type}")
