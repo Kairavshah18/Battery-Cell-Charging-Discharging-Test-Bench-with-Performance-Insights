@@ -15,65 +15,272 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for dark theme
+# Custom CSS for enhanced dark theme
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
     .stApp {
-        background-color: #1e1e1e;
+        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
         color: #ffffff;
+        font-family: 'Inter', sans-serif;
     }
     
     .main .block-container {
         padding-top: 2rem;
-        background-color: #1e1e1e;
+        background: transparent;
+        max-width: 95%;
     }
     
+    /* Sidebar styling */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #1e1e3e 0%, #2a2a4a 100%);
+        border-right: 2px solid #3a3a5a;
+    }
+    
+    /* Enhanced form controls */
     .stSelectbox > div > div {
-        background-color: #2d2d2d;
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
         color: #ffffff;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
     
     .stTextInput > div > div > input {
-        background-color: #2d2d2d;
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
         color: #ffffff;
-        border: 1px solid #404040;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #64b5f6;
+        box-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
     }
     
     .stNumberInput > div > div > input {
-        background-color: #2d2d2d;
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
         color: #ffffff;
-        border: 1px solid #404040;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
     }
     
+    .stNumberInput > div > div > input:focus {
+        border-color: #64b5f6;
+        box-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+    }
+    
+    /* Enhanced buttons */
+    .stButton > button {
+        background: linear-gradient(145deg, #4a90e2, #357abd);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        transition: all 0.3s ease;
+        transform: translateY(0);
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(145deg, #357abd, #2968a3);
+        box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    /* Secondary buttons for presets */
+    .stButton > button[kind="secondary"] {
+        background: linear-gradient(145deg, #6a4c93, #553c7b);
+        box-shadow: 0 4px 12px rgba(106, 76, 147, 0.3);
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: linear-gradient(145deg, #553c7b, #4a3269);
+        box-shadow: 0 6px 16px rgba(106, 76, 147, 0.4);
+    }
+    
+    /* Enhanced data display */
     .stDataFrame {
-        background-color: #2d2d2d;
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        border: 1px solid #4a4a6a;
     }
     
+    /* Enhanced metric cards */
     .metric-card {
-        background-color: #2d2d2d;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #404040;
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid #4a4a6a;
         margin-bottom: 1rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
     
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #64b5f6, #4fc3f7, #29b6f6);
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+    
+    .metric-card h4 {
+        color: #b0bec5;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Enhanced highlights */
     .highlight-high {
-        color: #ff6b6b;
-        font-weight: bold;
+        color: #ff5722;
+        font-weight: 700;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px rgba(255, 87, 34, 0.3);
     }
     
     .highlight-low {
-        color: #4ecdc4;
-        font-weight: bold;
+        color: #00e676;
+        font-weight: 700;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
     }
     
     .highlight-warning {
-        color: #ffa726;
-        font-weight: bold;
+        color: #ffc107;
+        font-weight: 700;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
     }
     
-    .preset-button {
-        margin: 0.25rem;
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        background: linear-gradient(145deg, #2a2a4a, #1e1e3e);
+        border-radius: 12px;
+        padding: 8px;
+        border: 1px solid #4a4a6a;
+        margin-bottom: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 8px;
+        color: #b0bec5;
+        font-weight: 500;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(145deg, #4a90e2, #357abd);
+        color: white;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    }
+    
+    /* Headers styling */
+    h1, h2, h3 {
+        background: linear-gradient(135deg, #64b5f6, #42a5f5);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    
+    /* Input headers */
+    .stColumns > div > div > p > strong {
+        color: #64b5f6;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Plotly chart container */
+    .js-plotly-plot {
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+    
+    /* Download button styling */
+    .stDownloadButton > button {
+        background: linear-gradient(145deg, #43a047, #2e7d32);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(67, 160, 71, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .stDownloadButton > button:hover {
+        background: linear-gradient(145deg, #2e7d32, #1b5e20);
+        box-shadow: 0 6px 16px rgba(67, 160, 71, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #1e1e3e;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(145deg, #4a4a6a, #3a3a5a);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(145deg, #5a5a7a, #4a4a6a);
+    }
+    
+    /* Info box styling */
+    .stAlert {
+        background: linear-gradient(145deg, #1a237e, #283593);
+        border: 1px solid #3949ab;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(25, 35, 126, 0.3);
+    }
+    
+    /* Animation for metric cards */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .metric-card {
+        animation: slideInUp 0.5s ease-out;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -93,7 +300,7 @@ def get_default_values(cell_type):
             "min_voltage": 2.8,
             "temp": round(random.uniform(25, 40), 1),
             "current": round(random.uniform(1.0, 5.0), 2),
-            "capacitance": round(random.uniform(2500, 3500), 0)
+            "capacitance": float(round(random.uniform(2500, 3500), 0))
         }
     else:  # NMC
         return {
@@ -102,7 +309,7 @@ def get_default_values(cell_type):
             "min_voltage": 3.2,
             "temp": round(random.uniform(25, 40), 1),
             "current": round(random.uniform(1.0, 5.0), 2),
-            "capacitance": round(random.uniform(2800, 3800), 0)
+            "capacitance": float(round(random.uniform(2800, 3800), 0))
         }
 
 def get_preset_values(mode, cell_type):
@@ -113,13 +320,13 @@ def get_preset_values(mode, cell_type):
                 "voltage": 3.3,
                 "temp": 28.0,
                 "current": 2.5,
-                "capacitance": 3200
+                "capacitance": 3200.0
             },
             "NMC": {
                 "voltage": 3.8,
                 "temp": 30.0,
                 "current": 3.0,
-                "capacitance": 3400
+                "capacitance": 3400.0
             }
         },
         "discharging": {
@@ -127,13 +334,13 @@ def get_preset_values(mode, cell_type):
                 "voltage": 3.1,
                 "temp": 35.0,
                 "current": 4.0,
-                "capacitance": 2800
+                "capacitance": 2800.0
             },
             "NMC": {
                 "voltage": 3.4,
                 "temp": 38.0,
                 "current": 4.5,
-                "capacitance": 3000
+                "capacitance": 3000.0
             }
         },
         "performance": {
@@ -141,13 +348,13 @@ def get_preset_values(mode, cell_type):
                 "voltage": 3.25,
                 "temp": 45.0,
                 "current": 6.0,
-                "capacitance": 3000
+                "capacitance": 3000.0
             },
             "NMC": {
                 "voltage": 3.7,
                 "temp": 42.0,
                 "current": 7.0,
-                "capacitance": 3200
+                "capacitance": 3200.0
             }
         }
     }
@@ -308,12 +515,28 @@ def create_individual_cell_chart(cell_data, cell_name):
     return fig
 
 # Main App
-st.title("Battery Cell Testing Dashboard")
+st.markdown("""
+<div style="text-align: center; padding: 2rem 0;">
+    <h1 style="font-size: 3rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 50%, #2196f3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        Battery Cell Testing Dashboard
+    </h1>
+    <p style="color: #b0bec5; font-size: 1.2rem; font-weight: 300;">Advanced Battery Analysis & Monitoring System</p>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("---")
 
 # Sidebar for main inputs
 with st.sidebar:
-    st.header("Test Configuration")
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0; margin-bottom: 1rem;">
+        <h2 style="background: linear-gradient(135deg, #64b5f6, #42a5f5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem;">
+            Control Panel
+        </h2>
+        <div style="height: 2px; background: linear-gradient(90deg, #64b5f6, #42a5f5); border-radius: 1px; margin: 0 2rem;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.subheader("Test Configuration")
     bench_name = st.text_input("Bench Name", value="Bench_001", key="bench_name")
     group_name = st.text_input("Group Name", value="Group_A", key="group_name")
     primary_cell_type = st.selectbox("Primary Cell Type", ["NMC", "LFP"])
@@ -335,36 +558,80 @@ with st.sidebar:
     # Testing mode presets
     st.markdown("---")
     st.subheader("Testing Mode Presets")
+    st.markdown("""
+    <div style="background: linear-gradient(145deg, #2a2a4a, #1e1e3e); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid #4a4a6a;">
+        <p style="color: #b0bec5; font-size: 0.9rem; margin-bottom: 1rem;">Quick preset configurations for different testing scenarios</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Charging Mode", type="secondary", key="charging_preset"):
+        if st.button("⚡ Charging Mode", type="secondary", key="charging_preset"):
             apply_preset_to_all_cells("charging")
             st.rerun()
     
     with col2:
-        if st.button("Discharging Mode", type="secondary", key="discharging_preset"):
+        if st.button("🔋 Discharging Mode", type="secondary", key="discharging_preset"):
             apply_preset_to_all_cells("discharging")
             st.rerun()
     
-    if st.button("Performance Mode", type="secondary", key="performance_preset"):
+    if st.button("🏎️ Performance Mode", type="secondary", key="performance_preset"):
         apply_preset_to_all_cells("performance")
         st.rerun()
     
     st.markdown("---")
+    st.markdown("""
+    <div style="background: linear-gradient(145deg, #4a90e2, #357abd); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+        <p style="color: white; font-size: 0.9rem; margin-bottom: 0; text-align: center; font-weight: 500;">🎲 Generate Random Test Data</p>
+    </div>
+    """, unsafe_allow_html=True)
     if st.button("Randomize All Values", type="primary"):
         for i in range(st.session_state.num_cells):
             cell_type = random.choice(["NMC", "LFP"])
-            defaults = get_default_values(cell_type)
+            
+            # Randomize voltage within cell type specific ranges with more variation
+            if cell_type == "LFP":
+                voltage_range = (2.8, 3.4)
+                base_voltage = 3.2
+            else:  # NMC
+                voltage_range = (3.2, 4.0)
+                base_voltage = 3.6
+            
+            # Add more randomization to voltage
+            voltage = round(random.uniform(voltage_range[0], voltage_range[1]), 2)
+            
+            # Randomize other parameters with wider ranges
+            temp = round(random.uniform(20, 50), 1)
+            current = round(random.uniform(0.5, 8.0), 2)
+            
+            if cell_type == "LFP":
+                capacitance = float(round(random.uniform(2000, 4000), 0))
+                max_voltage = 3.4
+                min_voltage = 2.8
+            else:  # NMC
+                capacitance = float(round(random.uniform(2200, 4200), 0))
+                max_voltage = 4.0
+                min_voltage = 3.2
+            
             st.session_state.cells_data[f"cell_{i+1}"] = {
                 "cell_type": cell_type,
-                **defaults
+                "voltage": voltage,
+                "temp": temp,
+                "current": current,
+                "capacitance": capacitance,
+                "max_voltage": max_voltage,
+                "min_voltage": min_voltage
             }
         st.rerun()
     
     # Export section
     st.markdown("---")
     st.subheader("Data Export")
+    st.markdown("""
+    <div style="background: linear-gradient(145deg, #43a047, #2e7d32); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+        <p style="color: white; font-size: 0.9rem; margin-bottom: 0; text-align: center; font-weight: 500;">📊 Export Test Results</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     if st.button("Export to CSV", type="primary"):
         csv_data = export_to_csv()
@@ -374,7 +641,7 @@ with st.sidebar:
             filename = f"battery_test_data_{timestamp}.csv"
             
             st.download_button(
-                label="Download CSV File",
+                label="📥 Download CSV File",
                 data=csv_string,
                 file_name=filename,
                 mime="text/csv",
@@ -387,19 +654,31 @@ with st.sidebar:
 tab1, tab2, tab3, tab4 = st.tabs(["Data Input", "Visualizations", "Insights", "Export Data"])
 
 with tab1:
-    st.header("Cell Testing Data Input")
-    st.markdown(f"Enter data for {st.session_state.num_cells} cell slots:")
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="background: linear-gradient(135deg, #64b5f6, #42a5f5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            Cell Testing Data Input
+        </h2>
+        <p style="color: #b0bec5;">Configure parameters for {} cell slots</p>
+    </div>
+    """.format(st.session_state.num_cells), unsafe_allow_html=True)
+    
+    # Create enhanced header row
+    st.markdown("""
+    <div style="background: linear-gradient(145deg, #2a2a4a, #1e1e3e); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid #4a4a6a;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 2fr 2fr 2fr 2fr; gap: 1rem; text-align: center;">
+            <div><strong style="color: #64b5f6;">SLOT</strong></div>
+            <div><strong style="color: #64b5f6;">CELL TYPE</strong></div>
+            <div><strong style="color: #ff5722;">TEMP (°C)</strong></div>
+            <div><strong style="color: #ffc107;">CURRENT (A)</strong></div>
+            <div><strong style="color: #4caf50;">VOLTAGE (V)</strong></div>
+            <div><strong style="color: #2196f3;">CAPACITY (mAh)</strong></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Create columns for input table
     cols = st.columns([1, 2, 2, 2, 2, 2])
-    
-    # Headers
-    cols[0].markdown("**Slot**")
-    cols[1].markdown("**Cell Type**")
-    cols[2].markdown("**Temperature (°C)**")
-    cols[3].markdown("**Current (A)**")
-    cols[4].markdown("**Voltage (V)**")
-    cols[5].markdown("**Capacitance (mAh)**")
     
     # Input rows
     for i in range(st.session_state.num_cells):
@@ -424,7 +703,7 @@ with tab1:
                 f"Temp {i+1}",
                 min_value=0.0,
                 max_value=100.0,
-                value=st.session_state.cells_data.get(f"cell_{i+1}", {}).get("temp", defaults["temp"]),
+                value=float(st.session_state.cells_data.get(f"cell_{i+1}", {}).get("temp", defaults["temp"])),
                 step=0.1,
                 key=f"temp_{i}",
                 label_visibility="collapsed"
@@ -435,7 +714,7 @@ with tab1:
                 f"Current {i+1}",
                 min_value=0.0,
                 max_value=20.0,
-                value=st.session_state.cells_data.get(f"cell_{i+1}", {}).get("current", defaults["current"]),
+                value=float(st.session_state.cells_data.get(f"cell_{i+1}", {}).get("current", defaults["current"])),
                 step=0.01,
                 key=f"current_{i}",
                 label_visibility="collapsed"
@@ -446,7 +725,7 @@ with tab1:
                 f"Voltage {i+1}",
                 min_value=0.0,
                 max_value=5.0,
-                value=st.session_state.cells_data.get(f"cell_{i+1}", {}).get("voltage", defaults["voltage"]),
+                value=float(st.session_state.cells_data.get(f"cell_{i+1}", {}).get("voltage", defaults["voltage"])),
                 step=0.01,
                 key=f"voltage_{i}",
                 label_visibility="collapsed"
@@ -457,7 +736,7 @@ with tab1:
                 f"Capacitance {i+1}",
                 min_value=0.0,
                 max_value=10000.0,
-                value=st.session_state.cells_data.get(f"cell_{i+1}", {}).get("capacitance", defaults["capacitance"]),
+                value=float(st.session_state.cells_data.get(f"cell_{i+1}", {}).get("capacitance", defaults["capacitance"])),
                 step=1.0,
                 key=f"capacitance_{i}",
                 label_visibility="collapsed"
@@ -533,7 +812,13 @@ with tab3:
         currents = [data['current'] for data in st.session_state.cells_data.values()]
         
         # Temperature analysis
-        st.subheader("Temperature Analysis")
+        st.markdown("""
+        <div style="text-align: center; margin: 2rem 0 1rem 0;">
+            <h3 style="background: linear-gradient(135deg, #ff5722, #ff7043); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                🌡️ Temperature Analysis
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
         
         with col1:
@@ -566,7 +851,13 @@ with tab3:
             """, unsafe_allow_html=True)
         
         # Voltage analysis
-        st.subheader("Voltage Analysis")
+        st.markdown("""
+        <div style="text-align: center; margin: 2rem 0 1rem 0;">
+            <h3 style="background: linear-gradient(135deg, #4caf50, #66bb6a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                ⚡ Voltage Analysis
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Check for cells outside nominal range
         out_of_range_cells = []
@@ -603,7 +894,13 @@ with tab3:
                 """, unsafe_allow_html=True)
         
         # Capacity analysis
-        st.subheader("Capacity Analysis")
+        st.markdown("""
+        <div style="text-align: center; margin: 2rem 0 1rem 0;">
+            <h3 style="background: linear-gradient(135deg, #2196f3, #42a5f5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                🔋 Capacity Analysis
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
         
         with col1:
