@@ -630,9 +630,6 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("""
-    <div style="background: linear-gradient(145deg, #4a90e2, #357abd); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-        <p style="color: white; font-size: 0.9rem; margin-bottom: 0; text-align: center; font-weight: 500;">🎲 Generate Random Test Data</p>
-    </div>
     """, unsafe_allow_html=True)
     if st.button("Randomize All Values", type="primary"):
         for i in range(st.session_state.num_cells):
