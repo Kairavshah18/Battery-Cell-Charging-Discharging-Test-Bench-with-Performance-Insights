@@ -290,10 +290,6 @@ if 'cells_data' not in st.session_state:
     st.session_state.cells_data = {}
 if 'num_cells' not in st.session_state:
     st.session_state.num_cells = 8
-if 'task_list' not in st.session_state:
-    st.session_state.task_list = []
-if 'user_defined_cells' not in st.session_state:
-    st.session_state.user_defined_cells = []
 
 def get_default_values(cell_type):
     """Get default values based on cell type"""
@@ -382,51 +378,6 @@ def apply_preset_to_all_cells(mode):
             **preset_values
         }
 
-def process_user_defined_cells(cell_types_list):
-    """Process user-defined cells similar to the original code logic"""
-    cells_data = {}
-    
-    for idx, cell_type in enumerate(cell_types_list, start=1):
-        cell_key = f"cell_{idx}_{cell_type.lower()}"
-        
-        voltage = 3.2 if cell_type.lower() == "lfp" else 3.6
-        min_voltage = 2.8 if cell_type.lower() == "lfp" else 3.2
-        max_voltage = 3.6 if cell_type.lower() == "lfp" else 4.0
-        current = 0.0
-        temp = round(random.uniform(25, 40), 1)
-        capacity = round(voltage * current, 2)
-        
-        cells_data[cell_key] = {
-            "cell_type": cell_type.upper(),
-            "voltage": voltage,
-            "current": current,
-            "temp": temp,
-            "capacitance": capacity,  # Using capacitance to match existing structure
-            "min_voltage": min_voltage,
-            "max_voltage": max_voltage
-        }
-    
-    return cells_data
-
-def process_task_list(task_list):
-    """Process the task list and return formatted task information"""
-    task_mapping = {
-        "CC_CV": "Constant Current - Constant Voltage",
-        "IDLE": "Idle State",
-        "CC_CD": "Constant Current - Constant Discharge"
-    }
-    
-    processed_tasks = []
-    for i, task in enumerate(task_list, 1):
-        task_upper = task.upper()
-        task_description = task_mapping.get(task_upper, task_upper)
-        processed_tasks.append({
-            "task_number": i,
-            "task_code": task_upper,
-            "task_description": task_description
-        })
-    
-    return processed_tasks
 def update_cell_count(new_count):
     """Update the number of cells and adjust data accordingly"""
     old_count = st.session_state.num_cells
@@ -630,6 +581,7 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("""
+
     """, unsafe_allow_html=True)
     if st.button("Randomize All Values", type="primary"):
         for i in range(st.session_state.num_cells):
@@ -697,7 +649,7 @@ with st.sidebar:
             st.error("No data available to export")
 
 # Main content area with tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Data Input", "User Defined Setup", "Task Configuration", "Visualizations", "Insights"])
+tab1, tab2, tab3, tab4 = st.tabs(["Data Input", "Visualizations", "Insights", "Export Data"])
 
 with tab1:
     st.markdown("""
@@ -800,161 +752,6 @@ with tab1:
         }
 
 with tab2:
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="background: linear-gradient(135deg, #ff9800, #f57c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-            User Defined Cell Setup
-        </h2>
-        <p style="color: #b0bec5;">Configure cells based on your custom requirements</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Cell Configuration")
-        
-        # Number of cells input
-        user_cell_count = st.number_input(
-            "Number of Cells",
-            min_value=1,
-            max_value=50,
-            value=4,
-            step=1,
-            key="user_cell_count"
-        )
-        
-        # Dynamic cell type inputs
-        user_cell_types = []
-        for i in range(user_cell_count):
-            cell_type = st.selectbox(
-                f"Cell {i+1} Type",
-                ["LFP", "NMC"],
-                key=f"user_cell_type_{i}"
-            )
-            user_cell_types.append(cell_type)
-        
-        # Process button
-        if st.button("Generate User Defined Cells", type="primary"):
-            user_cells_data = process_user_defined_cells(user_cell_types)
-            st.session_state.user_defined_cells = user_cells_data
-            st.success(f"Generated {len(user_cell_types)} user-defined cells!")
-    
-    with col2:
-        st.subheader("Generated Cell Data")
-        
-        if st.session_state.user_defined_cells:
-            # Display the generated cells in a nice format
-            for cell_key, cell_data in st.session_state.user_defined_cells.items():
-                with st.expander(f"📱 {cell_key.replace('_', ' ').title()}", expanded=False):
-                    col_a, col_b = st.columns(2)
-                    
-                    with col_a:
-                        st.metric("Cell Type", cell_data['cell_type'])
-                        st.metric("Voltage", f"{cell_data['voltage']}V")
-                        st.metric("Current", f"{cell_data['current']}A")
-                    
-                    with col_b:
-                        st.metric("Temperature", f"{cell_data['temp']}°C")
-                        st.metric("Capacity", f"{cell_data['capacitance']} mAh")
-                        st.metric("Voltage Range", f"{cell_data['min_voltage']}V - {cell_data['max_voltage']}V")
-            
-            # Option to use these cells in main dashboard
-            if st.button("Use These Cells in Main Dashboard", type="secondary"):
-                # Convert user defined cells to main dashboard format
-                st.session_state.num_cells = len(st.session_state.user_defined_cells)
-                st.session_state.cells_data = {}
-                
-                for i, (cell_key, cell_data) in enumerate(st.session_state.user_defined_cells.items(), 1):
-                    st.session_state.cells_data[f"cell_{i}"] = cell_data
-                
-                st.success("User-defined cells have been loaded into the main dashboard!")
-                st.info("Switch to the 'Data Input' tab to see your cells.")
-        
-        else:
-            st.info("Configure and generate cells using the panel on the left.")
-
-with tab5:
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-            Task Configuration
-        </h2>
-        <p style="color: #b0bec5;">Define testing tasks and procedures</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Task Setup")
-        
-        # Number of tasks
-        num_tasks = st.number_input(
-            "Number of Tasks",
-            min_value=1,
-            max_value=20,
-            value=3,
-            step=1,
-            key="num_tasks"
-        )
-        
-        # Task type inputs
-        task_list = []
-        for i in range(num_tasks):
-            task = st.selectbox(
-                f"Task {i+1}",
-                ["CC_CV", "IDLE", "CC_CD"],
-                key=f"task_{i}",
-                help="CC_CV: Constant Current-Constant Voltage, IDLE: Idle State, CC_CD: Constant Current-Constant Discharge"
-            )
-            task_list.append(task)
-        
-        # Process tasks button
-        if st.button("Process Tasks", type="primary"):
-            processed_tasks = process_task_list(task_list)
-            st.session_state.task_list = processed_tasks
-            st.success(f"Processed {len(task_list)} tasks!")
-    
-    with col2:
-        st.subheader("Task Sequence")
-        
-        if st.session_state.task_list:
-            # Display tasks in a timeline format
-            for task in st.session_state.task_list:
-                task_color = {
-                    "CC_CV": "#4caf50",
-                    "IDLE": "#ff9800", 
-                    "CC_CD": "#f44336"
-                }.get(task["task_code"], "#2196f3")
-                
-                st.markdown(f"""
-                <div style="background: linear-gradient(145deg, {task_color}20, {task_color}10); 
-                           padding: 1rem; border-radius: 12px; margin-bottom: 1rem; 
-                           border-left: 4px solid {task_color};">
-                    <h4 style="color: {task_color}; margin-bottom: 0.5rem;">
-                        Task {task["task_number"]}: {task["task_code"]}
-                    </h4>
-                    <p style="color: #b0bec5; margin-bottom: 0;">
-                        {task["task_description"]}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Task summary
-            st.subheader("Task Summary")
-            task_counts = {}
-            for task in st.session_state.task_list:
-                task_type = task["task_code"]
-                task_counts[task_type] = task_counts.get(task_type, 0) + 1
-            
-            for task_type, count in task_counts.items():
-                st.metric(f"{task_type} Tasks", count)
-        
-        else:
-            st.info("Configure and process tasks using the panel on the left.")
-
-with tab4:
     st.header("Data Visualizations")
     
     if st.session_state.cells_data:
@@ -1150,105 +947,8 @@ with tab3:
         summary_df = pd.DataFrame(summary_data)
         st.dataframe(summary_df, use_container_width=True)
         
-# Export section moved to insights tab
-    if st.session_state.cells_data:
-        st.markdown("---")
-        st.subheader("Data Export")
-        st.markdown("""
-        <div style="background: linear-gradient(145deg, #43a047, #2e7d32); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-            <p style="color: white; font-size: 0.9rem; margin-bottom: 0; text-align: center; font-weight: 500;">📊 Export Test Results</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Export current configuration
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Bench Name", bench_name)
-        with col2:
-            st.metric("Group Name", group_name)
-        with col3:
-            st.metric("Number of Cells", st.session_state.num_cells)
-        
-        # Export options
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("Export Complete Dataset", type="primary"):
-                export_data = export_to_csv()
-                if export_data is not None:
-                    csv_string = export_data.to_csv(index=False)
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"battery_test_data_{timestamp}.csv"
-                    
-                    st.download_button(
-                        label="📥 Download Complete CSV",
-                        data=csv_string,
-                        file_name=filename,
-                        mime="text/csv",
-                        key="download_complete_csv"
-                    )
-        
-        with col2:
-            if st.button("Export Summary Only", type="secondary"):
-                if st.session_state.cells_data:
-                    summary_stats = {
-                        'Parameter': ['Temperature', 'Voltage', 'Current', 'Capacitance'],
-                        'Average': [
-                            np.mean([data['temp'] for data in st.session_state.cells_data.values()]),
-                            np.mean([data['voltage'] for data in st.session_state.cells_data.values()]),
-                            np.mean([data['current'] for data in st.session_state.cells_data.values()]),
-                            np.mean([data['capacitance'] for data in st.session_state.cells_data.values()])
-                        ],
-                        'Min': [
-                            np.min([data['temp'] for data in st.session_state.cells_data.values()]),
-                            np.min([data['voltage'] for data in st.session_state.cells_data.values()]),
-                            np.min([data['current'] for data in st.session_state.cells_data.values()]),
-                            np.min([data['capacitance'] for data in st.session_state.cells_data.values()])
-                        ],
-                        'Max': [
-                            np.max([data['temp'] for data in st.session_state.cells_data.values()]),
-                            np.max([data['voltage'] for data in st.session_state.cells_data.values()]),
-                            np.max([data['current'] for data in st.session_state.cells_data.values()]),
-                            np.max([data['capacitance'] for data in st.session_state.cells_data.values()])
-                        ]
-                    }
-                    
-                    summary_df = pd.DataFrame(summary_stats)
-                    summary_csv = summary_df.to_csv(index=False)
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    summary_filename = f"battery_test_summary_{timestamp}.csv"
-                    
-                    st.download_button(
-                        label="📊 Download Summary CSV",
-                        data=summary_csv,
-                        file_name=summary_filename,
-                        mime="text/csv",
-                        key="download_summary_csv"
-                    )
-        
-        # Show task information if available
-        if st.session_state.task_list:
-            st.subheader("Task Configuration Export")
-            task_export_data = []
-            for task in st.session_state.task_list:
-                task_export_data.append({
-                    'Task_Number': task['task_number'],
-                    'Task_Code': task['task_code'],
-                    'Task_Description': task['task_description']
-                })
-            
-            task_df = pd.DataFrame(task_export_data)
-            task_csv = task_df.to_csv(index=False)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            task_filename = f"battery_test_tasks_{timestamp}.csv"
-            
-            st.download_button(
-                label="📋 Download Task Configuration",
-                data=task_csv,
-                file_name=task_filename,
-                mime="text/csv",
-                key="download_tasks_csv"
-            )
+    else:
+        st.info("Please enter cell data in the Data Input tab to see insights.")
 
 with tab4:
     st.header("Export Data")
